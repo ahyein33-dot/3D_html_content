@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#111f2a">
+<title>SMART FACTORY | 한국형 저상 전기 시내버스 조립공장 · Three.js</title>
+<style>
+:root{
+  --deep:#101e27;
+  --ink:#f5f8f7;
+  --soft:#bfd1d2;
+  --line:rgba(211,241,238,.19);
+  --panel:rgba(13,28,37,.85);
+  --teal:#72dfcb;
+  --gold:#ffdca0;
+  --critical:#ffb3a2;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1820;color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+button,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;outline:none;touch-action:none}
+#shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(7,24,29,.35),transparent 28%,transparent 68%,rgba(5,18,26,.22)),linear-gradient(0deg,rgba(3,16,20,.32),transparent 20%)}
+
+/* Header */
+.head{position:absolute;top:24px;left:28px;z-index:7;pointer-events:none;text-shadow:0 2px 12px rgba(0,0,0,.3)}
+.eyebrow{color:#a7f7e7;letter-spacing:.21em;font-weight:780;font-size:10px}
+.head h1{margin:8px 0 4px;font-size:clamp(22px,2.8vw,38px);font-weight:720;letter-spacing:-.05em}
+.head p{margin:0;color:#e4f0ed;font-size:11px;font-weight:480;line-height:1.6}
+.online{margin-top:11px;font-size:10px;display:inline-flex;align-items:center;gap:7px;color:#d3ede9;padding:6px 11px;background:rgba(11,27,35,.68);border:1px solid var(--line);border-radius:30px;backdrop-filter:blur(12px)}
+.led{display:inline-block;width:7px;height:7px;background:var(--teal);border-radius:50%;box-shadow:0 0 12px var(--teal)}
+
+/* Top Actions */
+.top-actions{position:absolute;right:24px;top:22px;z-index:10;display:flex;align-items:center;gap:7px}
+.btn,.view,.preset{border:1px solid var(--line);background:rgba(13,29,38,.83);color:#e8f3f1;border-radius:9px;padding:9px 12px;font-size:11px;line-height:1.15;white-space:nowrap;backdrop-filter:blur(12px);transition:all .18s}
+.btn:hover,.view:hover,.preset:hover{border-color:rgba(114,223,203,.58);background:rgba(37,63,72,.95)}
+.btn.primary{color:#10252b;background:#a6eadc;border-color:#b8f1e5;font-weight:750}
+.btn.primary:hover{background:#d5fff4}
+.btn.mobile{display:none}
+
+/* Left Assembly Sidebar (Glassmorphic) */
+.left-panel{position:absolute;z-index:6;top:155px;left:24px;bottom:94px;width:292px;max-height:calc(100vh - 249px);overflow-y:auto;overflow-x:hidden;scrollbar-color:#365863 transparent;scrollbar-width:thin;border:1px solid rgba(215,241,235,.20);background:rgba(12,29,39,.84);box-shadow:0 24px 75px rgba(0,0,0,.30);border-radius:18px;padding:16px;backdrop-filter:blur(24px)}
+.panel-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.caption{font-size:10px;font-weight:800;color:#a3ebe0;letter-spacing:.15em}
+.badge{font-size:9px;color:#a7e7dc;background:rgba(123,231,207,.10);border:1px solid rgba(114,223,203,.2);padding:4px 8px;border-radius:40px}
+.divider{border-top:1px solid rgba(214,244,239,.11);margin:14px 0}
+
+.stage-list{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.stage{width:100%;display:grid;grid-template-columns:28px 1fr 16px;gap:8px;text-align:left;border:1px solid transparent;background:rgba(241,255,253,.03);color:#9bb5b6;align-items:center;border-radius:10px;padding:9px 8px;transition:.18s}
+.stage:hover{background:rgba(114,223,203,.12);color:#f2fbf9;border-color:rgba(114,223,203,.25)}
+.stage.active{border-color:rgba(114,223,203,.65);background:rgba(108,226,197,.18);color:#ffffff;box-shadow:inset 3px 0 0 var(--teal)}
+.stage.done .stage-num{background:rgba(114,223,203,.22);color:#9ef7e5}
+.stage-num{border-radius:6px;padding:5px 2px;text-align:center;background:rgba(10,24,32,.7);color:#7ea7a9;font-size:10px;font-weight:800}
+.stage strong{font-size:11.5px;display:block;font-weight:700}
+.stage small{color:#86a3a5;font-size:9.5px;display:block;margin-top:2px}
+.stage .check{font-size:12px;color:var(--teal)}
+.stage.active small{color:#cbe6e2}
+
+.controls-row{display:flex;gap:6px;margin-top:10px}
+.controls-row button{flex:1;padding:8px 6px;font-size:10.5px;text-align:center}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.swatch{padding:7px 2px;background:rgba(241,255,253,.04);color:#b2cccc;border:1px solid var(--line);border-radius:9px;font-size:10px;font-weight:700;display:grid;justify-items:center;gap:5px;transition:.18s}
+.swatch i{width:20px;height:20px;border:2px solid rgba(255,255,255,.45);border-radius:50%;display:block}
+.swatch:hover{border-color:rgba(114,223,203,.5)}
+.swatch.selected{border-color:var(--teal);color:#ffffff;background:rgba(108,226,197,.22)}
+
+/* Right Control & Telemetry Panel */
+.control-panel{position:absolute;z-index:6;top:76px;right:24px;bottom:94px;width:320px;max-height:calc(100vh - 170px);overflow-y:auto;overflow-x:hidden;scrollbar-color:#365863 transparent;scrollbar-width:thin;border:1px solid rgba(215,241,235,.20);background:rgba(12,29,39,.86);box-shadow:0 24px 75px rgba(0,0,0,.30);border-radius:18px;padding:16px;backdrop-filter:blur(24px)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.kpi{border-radius:11px;border:1px solid rgba(216,245,239,.11);background:rgba(241,255,253,.045);padding:10px;min-height:82px}
+.kpi small{display:block;color:#bdd0d1;font-size:10px}
+.kpi strong{font-size:21px;line-height:1.35;font-weight:710;letter-spacing:-.04em}
+.kpi em{font-size:11px;color:#d0dedb;font-weight:500;font-style:normal}
+.kpi .assessment{font-size:10px;color:#91e7d3;display:block;margin-top:2px}
+.kpi.warn{background:rgba(248,148,105,.10);border-color:rgba(255,161,143,.45)}
+.kpi.warn .assessment{color:var(--gold)}
+
+.part-detail{border:1px solid rgba(171,236,217,.16);background:rgba(84,147,135,.10);border-radius:11px;padding:12px;margin-top:9px}
+.part-detail b{display:block;font-size:12px;color:#b4f8e8;margin-bottom:4px}
+.part-detail p{margin:0;font-size:10.5px;line-height:1.6;color:#d3e5e2}
+
+.event-log{display:flex;flex-direction:column;gap:6px;max-height:135px;overflow-y:auto;margin-top:9px;padding-right:4px}
+.event-log>div{border-left:2px solid var(--teal);padding:3px 0 3px 9px;font-size:10px;line-height:1.45;color:#c2d8d5;background:rgba(255,255,255,.02);border-radius:0 6px 6px 0}
+.event-log time{display:block;color:#84b8b5;font-size:9px}
+
+.notice{font-size:10px;color:#cee3df;line-height:1.6;padding:10px 11px;border:1px solid rgba(171,236,217,.14);background:rgba(84,147,135,.12);border-radius:10px;margin-top:12px}
+
+/* Bottom Bar & Camera Controls */
+.bottom{position:absolute;left:24px;bottom:20px;right:24px;z-index:7;display:flex;gap:10px;align-items:end;justify-content:space-between;pointer-events:none}
+.glass{pointer-events:auto;background:rgba(12,29,38,.82);border:1px solid var(--line);border-radius:13px;backdrop-filter:blur(20px);box-shadow:0 8px 35px rgba(0,0,0,.22);padding:11px 14px}
+.view-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.view{padding:7px 10px;font-size:10.5px}
+.view.active,.preset.active{background:rgba(108,226,197,.22);border-color:rgba(122,245,213,.68);color:#d4fff5;font-weight:700}
+
+.progress-glass{flex:1;max-width:560px}
+.progress-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.progress-head strong{font-size:12.5px;color:#f2fbf9}
+.progress-n{font-size:10px;color:#98dcd0;font-weight:800;letter-spacing:.08em}
+.progress-track{height:5px;border-radius:6px;background:rgba(255,255,255,.12);margin:8px 0}
+.progress-track>div{height:100%;width:12.5%;border-radius:6px;background:linear-gradient(90deg,#4bc4b0,#9ef7e5);transition:width .35s ease}
+.progress-caption{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#b8d1ce;font-size:10px}
+.speed-select{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.speed-select select{background:rgba(13,29,38,.9);color:#e8f3f1;border:1px solid var(--line);padding:3px 6px;border-radius:6px;font-size:10px}
+
+.loading{position:fixed;inset:0;z-index:99;background:radial-gradient(ellipse at 50% 40%,#213c46,#0d1b26 65%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;transition:opacity .5s}
+.loading strong{font-size:26px;letter-spacing:.03em;font-weight:650;color:#e8f7f5}
+.loading small{color:#a9c8c8;font-size:12px}
+.loading.off{opacity:0;pointer-events:none}
+
+dialog{background:rgba(12,28,37,.96);color:var(--ink);border:1px solid rgba(114,223,203,.4);max-width:520px;width:90%;border-radius:16px;padding:24px;box-shadow:0 30px 80px rgba(0,0,0,.6);backdrop-filter:blur(20px)}
+dialog::backdrop{background:rgba(5,14,20,.75)}
+dialog small{color:var(--teal);font-size:10px;letter-spacing:.15em;font-weight:800}
+dialog h2{margin:6px 0 12px;font-size:20px}
+dialog p,dialog li{font-size:12px;line-height:1.75;color:#cde0dd}
+dialog ul{padding-left:18px}
+.close-help{float:right;background:transparent;color:#a7f7e7;border:0;font-size:18px;padding:4px 8px}
+
+@media(max-width:1180px){
+  .left-panel{width:255px}
+  .control-panel{width:280px}
+  .progress-glass{display:none}
+}
+@media(max-width:840px){
+  .left-panel,.control-panel{display:none}
+  .left-panel.open,.control-panel.open{display:block;position:fixed;top:72px;bottom:85px;width:calc(100vw - 24px);left:12px;right:12px;z-index:30}
+  .btn.mobile{display:inline-block}
+  .bottom{left:12px;right:12px;bottom:12px}
+}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+<script type="application/json" id="sceneSpec">
+{
+  "title": "SMART FACTORY — 한국형 저상 전기 시내버스 조립공장 디지털 트윈",
+  "version": "2.0.0-classroom-style-stable",
+  "coordinateSystem": {"three": "X right, Y up, Z front-back", "units": "meters"},
+  "cameraViews": {
+    "overview": {"positionXYZ": [-11.5, 6.8, 14.8], "targetXYZ": [0, 1.85, 0]},
+    "side": {"positionXYZ": [0, 2.3, 13.8], "targetXYZ": [0, 1.8, 0]},
+    "front": {"positionXYZ": [12.5, 2.5, 3.2], "targetXYZ": [1.5, 1.75, 0]},
+    "cabin": {"positionXYZ": [2.2, 2.05, 0.35], "targetXYZ": [-2.5, 1.65, -0.1]},
+    "top": {"positionXYZ": [0.5, 14.5, 6.5], "targetXYZ": [0, 1.0, 0]},
+    "under": {"positionXYZ": [-6.8, 0.65, 7.2], "targetXYZ": [0, 0.85, 0]}
+  }
+}
+</script>
+</head>
+<body>
+<div id="stage" aria-label="한국 시내버스 조립공장 Three.js 실시간 3D 뷰"></div>
+<div id="shade"></div>
+
+<header class="head">
+  <div class="eyebrow">DIGITAL TWIN LAB · SMART FACTORY</div>
+  <h1>한국형 전기 시내버스 조립공장</h1>
+  <p>실사풍 스마트팩토리 · 8단계 공정 시뮬레이션 · 차체 구조 및 품질 관제</p>
+  <span class="online"><span class="led"></span><span id="timeMode">가상 조립라인 운영 중 · ASSEMBLY BAY 01</span></span>
+</header>
+
+<div class="top-actions">
+  <button class="btn mobile" id="mobileLeft">공정 메뉴</button>
+  <button class="btn mobile" id="mobileRight">관제 패널</button>
+  <button class="btn" id="helpBtn">조작 안내</button>
+  <button class="btn" id="jsonBtn">장면 JSON</button>
+  <button class="btn primary" id="pngBtn">3D 화면 PNG</button>
+</div>
+
+<!-- Left Panel: 8-Stage Assembly & Paint -->
+<aside class="left-panel" id="leftPanel">
+  <div class="panel-top">
+    <span class="caption">ASSEMBLY · 8단계 조립 공정</span>
+    <span class="badge">LINE 01</span>
+  </div>
+  <div id="stage-list" class="stage-list"></div>
+
+  <div class="divider"></div>
+  <div class="panel-top"><span class="caption">PROCESS · 공정 제어</span></div>
+  <div class="controls-row">
+    <button class="btn" id="prev">◀ 이전</button>
+    <button class="btn primary" id="play">▶ 자동 실행</button>
+    <button class="btn" id="next">다음 ▶</button>
+  </div>
+  <div class="controls-row">
+    <button class="btn" id="reset">↺ 초기화</button>
+    <button class="btn" id="door">도어 열기</button>
+    <button class="btn" id="explode">분해 보기</button>
+  </div>
+
+  <div class="divider"></div>
+  <div class="panel-top"><span class="caption">LIVERY · 차체 노선 도장</span></div>
+  <div class="swatches">
+    <button class="swatch selected" data-color="blue"><i style="background:#006dc5"></i>간선</button>
+    <button class="swatch" data-color="green"><i style="background:#269374"></i>지선</button>
+    <button class="swatch" data-color="red"><i style="background:#c23d50"></i>광역</button>
+    <button class="swatch" data-color="yellow"><i style="background:#d9af42"></i>순환</button>
+  </div>
+</aside>
+
+<!-- Right Panel: Digital Twin Monitoring -->
+<aside class="control-panel" id="rightPanel">
+  <div class="panel-top">
+    <span class="caption">DIGITAL TWIN · 공정 관제</span>
+    <span class="badge" id="simBadge">READY</span>
+  </div>
+  <div class="kpis">
+    <div class="kpi">
+      <small>공정 진행률</small>
+      <div><strong id="kpi-progress">12.5</strong> <em>%</em></div>
+      <span class="assessment">표준 택트타임 준수</span>
+    </div>
+    <div class="kpi">
+      <small>완료 모듈</small>
+      <div><strong id="kpi-modules">01</strong> <em>/ 08</em></div>
+      <span class="assessment">단계별 자동 검증</span>
+    </div>
+    <div class="kpi">
+      <small>라인 상태</small>
+      <div><strong id="kpi-status" style="font-size:17px">조립 대기</strong></div>
+      <span class="assessment" id="lineSub">컨베이어 정지</span>
+    </div>
+    <div class="kpi" id="qualityCard">
+      <small>품질 검사</small>
+      <div><strong id="kpi-quality" style="font-size:17px">진행 중</strong></div>
+      <span class="assessment" id="qualitySub">최종 단계 판정</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="panel-top"><span class="caption">INSPECTOR · 선택 부품 정보</span><span style="font-size:9px;color:#84b8b5">CLICK 3D</span></div>
+  <div class="part-detail" id="part-detail">
+    <b>부품을 클릭해 상세 제원을 확인하세요</b>
+    <p>3D 공간의 섀시, 휠, 배터리 팩, 차체 골격, 외판, 도어 또는 좌석을 선택하면 구조와 역할을 표시합니다.</p>
+  </div>
+
+  <div class="divider"></div>
+  <div class="panel-top"><span class="caption">STAGE INFO · 현재 공정 설명</span></div>
+  <div class="part-detail" style="background:rgba(14,35,46,.5)">
+    <b id="explain-title">01 · 섀시 프레임</b>
+    <p id="explain-text">하부 종방향 프레임과 횡방향 보강대를 조립해 차량의 기초 구조를 구성합니다.</p>
+  </div>
+
+  <div class="divider"></div>
+  <div class="panel-top"><span class="caption">EVENT LOG · 공정 이력</span></div>
+  <div id="log" class="event-log" aria-live="polite"></div>
+
+  <div class="notice" id="message">마우스 드래그 회전 · 휠 확대/축소 · 우클릭 이동이 가능합니다.</div>
+</aside>
+
+<!-- Bottom Bar: Camera Presets & Progress -->
+<div class="bottom">
+  <div class="glass">
+    <div class="caption">CAMERA · 시점 전환</div>
+    <div class="view-row" id="cameraButtons">
+      <button class="view active" data-view="overview">사선 전경</button>
+      <button class="view" data-view="side">측면</button>
+      <button class="view" data-view="front">전면</button>
+      <button class="view" data-view="cabin">실내</button>
+      <button class="view" data-view="top">상부</button>
+      <button class="view" data-view="under">하부</button>
+      <button class="view" id="resetView">시점 초기화</button>
+    </div>
+  </div>
+
+  <div class="glass progress-glass">
+    <div class="progress-head">
+      <div>
+        <span class="progress-n">STEP <b id="step-no">01</b> / 08</span>
+        <strong id="step-title" style="margin-left:8px">섀시 프레임</strong>
+      </div>
+      <div class="speed-select">
+        <label for="speed">속도</label>
+        <select id="speed">
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1.0×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2.0×</option>
+        </select>
+      </div>
+    </div>
+    <div class="progress-track"><div id="progress-fill"></div></div>
+    <div class="progress-caption"><span id="step-desc">하부 종방향 프레임과 횡방향 보강대를 조립해 차량의 기초 구조를 구성합니다.</span></div>
+  </div>
+
+  <div class="glass">
+    <div class="caption">VISUAL · 시각화 옵션</div>
+    <div class="view-row">
+      <button class="preset" id="xray">X-RAY 투시</button>
+      <button class="preset" id="spin">360° 회전</button>
+    </div>
+  </div>
+</div>
+
+<div id="graphicsNotice" hidden role="alert" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:45;width:min(90vw,420px);padding:22px;text-align:center;color:#effcf9;background:rgba(10,28,37,.96);border:1px solid #86dcd0;border-radius:16px;box-shadow:0 16px 50px rgba(0,0,0,.6)">
+  <strong>그래픽 연결이 일시 중단되었습니다</strong>
+  <p style="font-size:12px;line-height:1.7">WebGL 컨텍스트 복구를 시도하고 있습니다.<br>화면이 돌아오지 않으면 페이지를 새로고침하세요.</p>
+  <button class="btn primary" onclick="location.reload()">다시 실행</button>
+</div>
+
+<div class="loading" id="loading">
+  <strong>SMART BUS FACTORY</strong>
+  <small>Three.js 한국형 전기 시내버스 조립공장을 불러오는 중…</small>
+</div>
+
+<dialog id="help">
+  <button id="close-help" class="close-help">✕</button>
+  <small>EDUCATIONAL DIGITAL TWIN</small>
+  <h2>한국 시내버스 3D 조립공장 안내</h2>
+  <p><b>smart_classroom_camera_stable</b>의 다크 테일 글래스모피즘 스타일과 카메라 안정화 엔진을 반영한 저상 전기 시내버스 조립공장 디지털 트윈입니다.</p>
+  <ul>
+    <li><b>8단계 조립 공정</b>: 좌측 단계 버튼을 누르거나 '자동 실행'으로 조립 과정을 관찰합니다.</li>
+    <li><b>카메라 안정화</b>: 벽면 관통 방지 및 자동 벽면 절개(Wall Cutaway)가 적용되어 어느 각도에서도 시야가 가리지 않습니다.</li>
+    <li><b>X-RAY / 분해 보기</b>: 차체 외판을 반투명하게 전환하거나 모듈을 공간적으로 펼쳐 내부 배치를 점검합니다.</li>
+    <li><b>부품 클릭 검사</b>: 3D 모델의 휠, 배터리, 좌석, 차체 등을 클릭하면 우측 패널에 상세 설명이 표시됩니다.</li>
+  </ul>
+</dialog>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const SPEC = JSON.parse(document.getElementById('sceneSpec').textContent);
+const $ = id => document.getElementById(id);
+
+const stageData = [
+  {title:'섀시 프레임', sub:'강재 프레임 / 하부 플랫폼', desc:'하부 종방향 프레임과 횡방향 보강대를 조립해 차량의 기초 구조를 구성합니다.', detail:'고장력 강재 사다리형 섀시와 저상 버스 전용 저상형 바닥 플로어 프레임이 결합됩니다.'},
+  {title:'차축·바퀴', sub:'액슬 / 휠 / 서스펜션', desc:'전후 차축, 에어 서스펜션, 타이어와 휠을 조립합니다.', detail:'전륜 독립 현가 장치와 후륜 구동 액슬, 고하중 광폭 타이어가 장착되어 주행 안정성을 확보합니다.'},
+  {title:'배터리·전기 구동계', sub:'고전압 배터리 / 인휠·중앙 모터', desc:'하부 및 루프 고전압 배터리 팩과 전기 구동 모듈을 설치합니다.', detail:'리튬이온 배터리 모듈과 고전압 오렌지 배선, 수냉식 인버터 및 구동 모터가 배치됩니다.'},
+  {title:'차체 골격', sub:'기둥 / 횡보 / 지붕 프레임', desc:'측면 필러 기둥과 지붕 스페이스 프레임을 차체 하부에 결합합니다.', detail:'전복 안전 기준을 충족하는 폐단면 사각 강관 스페이스 프레임 골격입니다.'},
+  {title:'외판·지붕 도장', sub:'외장 패널 / 도장 / 루프 커버', desc:'도장된 외장 알루미늄/FRP 패널과 루프 페어링을 부착합니다.', detail:'서울·수도권 시내버스 표준 도장 컬러(간선 파랑, 지선 초록, 광역 빨강, 순환 노랑)를 실시간 적용합니다.'},
+  {title:'창문·출입문', sub:'안전유리 / 자동문 / LED 램프', desc:'전면 파노라마 유리, 측면 통유리, 전·중문 슬라이딩 도어 및 헤드램프를 부착합니다.', detail:'저상버스 특유의 넓은 중문 출입구와 휠체어 경사로 발판, LED 주간주행등이 장착됩니다.'},
+  {title:'실내·편의시설', sub:'좌석 / 안전 손잡이 / 운전석', desc:'객실 좌석, 노란색 안전 손잡이, 운전석 대시보드 및 행선지 안내기를 설치합니다.', detail:'교통약자 배려석과 입석 손잡이, 디지털 계기판 및 운전자 보호 격벽이 설치됩니다.'},
+  {title:'완성·품질 검사', sub:'전장 / 조명 / 기능 최종 검사', desc:'전장 시스템, 헤드램프, 실내 LED 조명 및 도어 개폐 작동을 최종 검증합니다.', detail:'모든 조립 공정이 완료되고 품질 검사 레이저 스캐너가 PASS 판정을 완료했습니다.'}
+];
+
+/* Renderer Setup (Camera-Stable & GPU Optimized) */
+const host = $('stage');
+const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true, powerPreference:'default'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.18;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;
+renderer.shadowMap.needsUpdate = true;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#13242e');
+scene.fog = new THREE.Fog('#13242e', 36, 88);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 140);
+camera.position.set(...SPEC.cameraViews.overview.positionXYZ);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(...SPEC.cameraViews.overview.targetXYZ);
+controls.enableDamping = true;
+controls.dampingFactor = 0.065;
+controls.minDistance = 2.8;
+controls.maxDistance = 32;
+controls.minPolarAngle = 0.08;
+controls.maxPolarAngle = Math.PI * 0.485;
+controls.enablePan = true;
+controls.update();
+
+function clampTarget() {
+  const before = controls.target.clone();
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -8.5, 8.5);
+  controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0.35, 3.6);
+  controls.target.z = THREE.MathUtils.clamp(controls.target.z, -5.5, 5.5);
+  camera.position.add(controls.target.clone().sub(before));
+}
+
+/* Lighting matching Smart Classroom Reference */
+const hemi = new THREE.HemisphereLight('#dff3ff', '#3a4c56', 1.45);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight('#fff2df', 2.45);
+sun.position.set(-12, 16, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.left = -16;
+sun.shadow.camera.right = 16;
+sun.shadow.camera.top = 16;
+sun.shadow.camera.bottom = -16;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 48;
+sun.shadow.bias = -0.00015;
+sun.shadow.normalBias = 0.04;
+scene.add(sun);
+
+const rimLight = new THREE.DirectionalLight('#72dfcb', 0.85);
+rimLight.position.set(14, 9, -11);
+scene.add(rimLight);
+
+/* Shared PBR Materials */
+const mat = {
+  floor: new THREE.MeshStandardMaterial({color:'#23333d', roughness:0.76, metalness:0.12}),
+  lineYellow: new THREE.MeshStandardMaterial({color:'#e5be58', roughness:0.65, metalness:0.05}),
+  wall: new THREE.MeshStandardMaterial({color:'#2b3e4a', roughness:0.86, metalness:0.15}),
+  steel: new THREE.MeshStandardMaterial({color:'#6c7d88', roughness:0.32, metalness:0.76}),
+  darkSteel: new THREE.MeshStandardMaterial({color:'#2f3d47', roughness:0.38, metalness:0.74}),
+  silver: new THREE.MeshStandardMaterial({color:'#c7d3d9', roughness:0.24, metalness:0.78}),
+  rubber: new THREE.MeshStandardMaterial({color:'#181d22', roughness:0.92, metalness:0.02}),
+  batteryOrange: new THREE.MeshStandardMaterial({color:'#e66c2c', roughness:0.38, metalness:0.25}),
+  batteryPack: new THREE.MeshStandardMaterial({color:'#3b5361', roughness:0.42, metalness:0.55}),
+  safetyYellow: new THREE.MeshStandardMaterial({color:'#f2b938', roughness:0.35, metalness:0.25}),
+  glass: new THREE.MeshPhysicalMaterial({color:'#8ad0e0', roughness:0.12, metalness:0.1, transparent:true, opacity:0.34, depthWrite:false, side:THREE.DoubleSide}),
+  paint: new THREE.MeshPhysicalMaterial({color:'#006dc5', roughness:0.24, metalness:0.35, clearcoat:0.85, clearcoatRoughness:0.15}),
+  roofWhite: new THREE.MeshPhysicalMaterial({color:'#e6ecee', roughness:0.32, metalness:0.2, clearcoat:0.6}),
+  trimDark: new THREE.MeshStandardMaterial({color:'#16222a', roughness:0.42, metalness:0.3}),
+  seatBlue: new THREE.MeshStandardMaterial({color:'#245373', roughness:0.82, metalness:0.04}),
+  ledHead: new THREE.MeshStandardMaterial({color:'#ffffff', emissive:'#b8f7ff', emissiveIntensity:1.8}),
+  ledTail: new THREE.MeshStandardMaterial({color:'#ff4d4d', emissive:'#ff2a2a', emissiveIntensity:1.5}),
+  tealLaser: new THREE.MeshBasicMaterial({color:'#64ebd5', transparent:true, opacity:0.38, depthWrite:false})
+};
+
+const root = new THREE.Group();
+root.name = 'Smart_Bus_Factory_Digital_Twin';
+scene.add(root);
+
+function addMesh(parent, geo, material, x=0, y=0, z=0, name='Part', info=null, cast=true) {
+  const m = new THREE.Mesh(geo, material);
+  m.position.set(x, y, z);
+  m.castShadow = cast;
+  m.receiveShadow = true;
+  m.name = name;
+  if (info) m.userData.info = info;
+  parent.add(m);
+  return m;
+}
+
+/* ===========================================================
+   1. Factory Environment with Automatic Wall Cutaway
+   =========================================================== */
+const factory = new THREE.Group();
+factory.name = 'Factory_Architecture';
+root.add(factory);
+
+// Procedural Epoxy Floor Texture
+const floorCanvas = document.createElement('canvas');
+floorCanvas.width = 512; floorCanvas.height = 512;
+const fctx = floorCanvas.getContext('2d');
+fctx.fillStyle = '#24353f'; fctx.fillRect(0,0,512,512);
+fctx.strokeStyle = 'rgba(114,223,203,0.08)'; fctx.lineWidth = 2;
+for(let i=0;i<=512;i+=64){ fctx.beginPath(); fctx.moveTo(i,0); fctx.lineTo(i,512); fctx.stroke(); fctx.beginPath(); fctx.moveTo(0,i); fctx.lineTo(512,i); fctx.stroke(); }
+const floorTex = new THREE.CanvasTexture(floorCanvas);
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+floorTex.repeat.set(14, 10);
+mat.floor.map = floorTex;
+
+addMesh(factory, new THREE.BoxGeometry(38, 0.24, 26), mat.floor, 0, -0.12, 0, 'Factory_Epoxy_Floor', null, false);
+
+// Safety Bay Lines & Assembly Guide Rails
+for (const side of [-1, 1]) {
+  addMesh(factory, new THREE.BoxGeometry(22, 0.012, 0.12), mat.lineYellow, 0, 0.008, side * 2.85, 'Bay_Safety_Line', null, false);
+  addMesh(factory, new THREE.BoxGeometry(15.5, 0.08, 0.26), mat.darkSteel, 0, 0.04, side * 1.15, 'Conveyor_Rail', null, false);
+}
+
+// Back & Left Walls (with cutaway support)
+const backWallGroup = new THREE.Group();
+factory.add(backWallGroup);
+addMesh(backWallGroup, new THREE.BoxGeometry(38, 8.5, 0.25), mat.wall, 0, 4.25, -11.5, 'Factory_Back_Wall', null, false);
+for (let x = -15; x <= 15; x += 6) {
+  addMesh(backWallGroup, new THREE.BoxGeometry(0.35, 8.5, 0.42), mat.steel, x, 4.25, -11.2, 'H_Beam_Column', null, false);
+  // Overhead LED Light Panels (Smart Classroom style)
+  const panel = addMesh(factory, new THREE.BoxGeometry(2.6, 0.08, 0.9), mat.roofWhite, x, 7.6, 0, 'Ceiling_LED_Panel', null, false);
+  const diff = addMesh(factory, new THREE.BoxGeometry(2.4, 0.02, 0.75), mat.ledHead, x, 7.55, 0, 'LED_Diffuser', null, false);
+}
+
+function updateWallCutaway() {
+  backWallGroup.visible = camera.position.z > -9.5;
+}
+
+/* ===========================================================
+   2. 8-Stage Korean Low-Floor Electric City Bus Assembly
+   =========================================================== */
+const busRoot = new THREE.Group();
+busRoot.name = 'Korean_Electric_City_Bus';
+root.add(busRoot);
+
+const stages = [];
+for (let i = 0; i < 8; i++) {
+  const g = new THREE.Group();
+  g.name = `Assembly_Stage_${i + 1}`;
+  busRoot.add(g);
+  stages.push(g);
+}
+
+// Explode offsets for each stage
+const explodeOffsets = [
+  new THREE.Vector3(0, 0, 0),       // 1. Chassis
+  new THREE.Vector3(0, -0.25, 0.7), // 2. Axles & Wheels
+  new THREE.Vector3(0, 1.35, 0),    // 3. Battery & Drive
+  new THREE.Vector3(0, 0.65, 0),    // 4. Space Frame
+  new THREE.Vector3(0, 1.1, -0.8),  // 5. Outer Body Panels
+  new THREE.Vector3(0, 0.35, 0.85), // 6. Glass & Doors
+  new THREE.Vector3(0, 0.55, 0),    // 7. Interior Seats & Poles
+  new THREE.Vector3(0, 0, 0)        // 8. Final Quality Inspection
+];
+
+// --- STAGE 01: Chassis Frame (저상 섀시 프레임) ---
+const s1 = stages[0];
+const chassisInfo = {title:'저상 고장력 강재 섀시 프레임', desc:'승객 승하차 편의를 위해 바닥 높이를 340mm로 낮춘 저상버스 전용 사다리형 메인 프레임입니다.'};
+for (const z of [-0.95, 0.95]) {
+  addMesh(s1, new THREE.BoxGeometry(10.8, 0.16, 0.14), mat.darkSteel, 0, 0.44, z, 'Main_Longitudinal_Rail', chassisInfo);
+}
+for (let x = -5.2; x <= 5.2; x += 1.04) {
+  addMesh(s1, new THREE.BoxGeometry(0.11, 0.13, 1.95), mat.steel, x, 0.44, 0, 'Cross_Member', chassisInfo);
+}
+// Low-floor deck base
+addMesh(s1, new THREE.BoxGeometry(10.6, 0.05, 2.38), mat.trimDark, 0, 0.53, 0, 'Low_Floor_Deck', chassisInfo);
+
+// --- STAGE 02: Axles & Wheels (차축·바퀴) ---
+const s2 = stages[1];
+const wheelInfo = {title:'전·후륜 액슬 및 광폭 타이어', desc:'전륜 독립 에어 서스펜션과 후륜 고하중 구동 차축, 275/70R22.5 저상버스 전용 휠 어셈블리입니다.'};
+const wheelX = [3.35, -3.15];
+wheelX.forEach((x, idx) => {
+  addMesh(s2, new THREE.CylinderGeometry(0.09, 0.09, 2.32, 16).rotateX(Math.PI/2), mat.darkSteel, x, 0.48, 0, `Axle_Shaft_${idx+1}`, wheelInfo);
+  for (const side of [-1, 1]) {
+    const zPos = side * 1.12;
+    const tire = addMesh(s2, new THREE.CylinderGeometry(0.48, 0.48, 0.30, 28).rotateX(Math.PI/2), mat.rubber, x, 0.48, zPos, `Tire_${idx}_${side}`, wheelInfo);
+    const rim = addMesh(s2, new THREE.CylinderGeometry(0.27, 0.27, 0.31, 20).rotateX(Math.PI/2), mat.silver, x, 0.48, zPos, `Alloy_Rim_${idx}_${side}`, wheelInfo);
+    const hub = addMesh(s2, new THREE.CylinderGeometry(0.11, 0.11, 0.32, 14).rotateX(Math.PI/2), mat.darkSteel, x, 0.48, zPos, `Wheel_Hub_${idx}_${side}`, wheelInfo);
+  }
+});
+
+// --- STAGE 03: Battery & Electric Powertrain (배터리·전기 구동계) ---
+const s3 = stages[2];
+const batteryInfo = {title:'대용량 리튬이온 배터리 & 전기 구동계', desc:'1회 충전 300km 이상 주행 가능한 루프 및 후방 고전압 배터리 팩과 240kW급 전기 구동 모터입니다.'};
+// Roof Battery Modules
+for (let i = 0; i < 3; i++) {
+  addMesh(s3, new THREE.BoxGeometry(1.85, 0.28, 1.65), mat.batteryPack, -1.6 + i * 2.1, 3.16, 0, `Roof_Battery_Pack_${i+1}`, batteryInfo);
+  addMesh(s3, new THREE.BoxGeometry(1.75, 0.05, 0.14), mat.batteryOrange, -1.6 + i * 2.1, 3.31, 0.65, `HV_Busbar_${i+1}`, batteryInfo);
+}
+// Rear Motor & Inverter
+addMesh(s3, new THREE.CylinderGeometry(0.28, 0.28, 0.95, 20).rotateX(Math.PI/2), mat.steel, -4.35, 0.56, 0, 'Traction_Motor', batteryInfo);
+addMesh(s3, new THREE.BoxGeometry(0.85, 0.36, 1.35), mat.batteryOrange, -4.65, 0.95, 0, 'HV_Inverter_Unit', batteryInfo);
+
+// --- STAGE 04: Body Space Frame (차체 골격) ---
+const s4 = stages[3];
+const frameInfo = {title:'폐단면 강관 스페이스 프레임 골격', desc:'측면 충돌 및 전복 안전성을 확보하는 고강성 수직 필러와 루프 횡보 구조체입니다.'};
+const pillarX = [-5.35, -3.8, -2.1, -0.35, 1.35, 3.05, 4.45, 5.35];
+for (const x of pillarX) {
+  for (const side of [-1, 1]) {
+    addMesh(s4, new THREE.BoxGeometry(0.08, 2.45, 0.08), mat.steel, x, 1.76, side * 1.18, 'Side_Pillar', frameInfo);
+  }
+  addMesh(s4, new THREE.BoxGeometry(0.08, 0.08, 2.42), mat.steel, x, 2.98, 0, 'Roof_Bow', frameInfo);
+}
+// Waist & Roof longitudinal rails
+for (const side of [-1, 1]) {
+  addMesh(s4, new THREE.BoxGeometry(10.78, 0.08, 0.08), mat.steel, 0, 1.35, side * 1.18, 'Waist_Rail', frameInfo);
+  addMesh(s4, new THREE.BoxGeometry(10.78, 0.09, 0.09), mat.steel, 0, 2.98, side * 1.18, 'Cant_Rail', frameInfo);
+}
+
+// --- STAGE 05: Exterior Panels & Livery (외판·지붕 도장) ---
+const s5 = stages[4];
+const bodyInfo = {title:'친환경 수성 도장 외판 및 루프 페어링', desc:'경량 알루미늄 사이드 스커트와 공기역학적 루프 배터리 페어링이 결합된 외장 패널입니다.'};
+const transparentBodyMats = [mat.paint, mat.roofWhite];
+
+// Lower Side Skirts (leaving wheel arches and doors clear)
+// Right side (Z = +1.22): front door at x=4.15, center door at x=0.5
+addMesh(s5, new THREE.BoxGeometry(2.85, 0.84, 0.06), mat.paint, -3.95, 0.94, 1.22, 'Right_Rear_Skirt', bodyInfo);
+addMesh(s5, new THREE.BoxGeometry(1.75, 0.84, 0.06), mat.paint, 2.25, 0.94, 1.22, 'Right_Mid_Skirt', bodyInfo);
+// Left side (Z = -1.22): full continuous skirt
+addMesh(s5, new THREE.BoxGeometry(10.76, 0.84, 0.06), mat.paint, 0, 0.94, -1.22, 'Left_Full_Skirt', bodyInfo);
+// Front & Rear Masks
+addMesh(s5, new THREE.BoxGeometry(0.12, 0.88, 2.48), mat.paint, 5.38, 0.96, 0, 'Front_Bumper_Mask', bodyInfo);
+addMesh(s5, new THREE.BoxGeometry(0.12, 2.46, 2.48), mat.paint, -5.38, 1.76, 0, 'Rear_Engine_Hood', bodyInfo);
+// Roof Panel & Aerodynamic Fairing
+addMesh(s5, new THREE.BoxGeometry(10.82, 0.12, 2.48), mat.roofWhite, 0, 3.04, 0, 'Roof_Main_Panel', bodyInfo);
+addMesh(s5, new THREE.BoxGeometry(6.8, 0.34, 2.18), mat.roofWhite, -0.3, 3.24, 0, 'Battery_Roof_Fairing', bodyInfo);
+// Upper Header Band
+for (const side of [-1, 1]) {
+  addMesh(s5, new THREE.BoxGeometry(10.78, 0.24, 0.06), mat.paint, 0, 2.88, side * 1.22, 'Upper_Header_Panel', bodyInfo);
+}
+
+// --- STAGE 06: Windows, Doors & Lamps (창문·출입문) ---
+const s6 = stages[5];
+const doorInfo = {title:'파노라마 안전유리 및 전·중문 슬라이딩 도어', desc:'넓은 시야를 제공하는 강화 복층 유리와 교통약자 승하차를 위한 광폭 자동 슬라이딩 도어입니다.'};
+
+// Front Windshield
+addMesh(s6, new THREE.BoxGeometry(0.05, 1.48, 2.34), mat.glass, 5.36, 2.12, 0, 'Front_Windshield', doorInfo, false);
+// Left Side Windows
+addMesh(s6, new THREE.BoxGeometry(10.4, 1.38, 0.04), mat.glass, 0, 2.06, -1.21, 'Left_Panorama_Glass', doorInfo, false);
+// Right Side Windows (between doors)
+addMesh(s6, new THREE.BoxGeometry(3.2, 1.38, 0.04), mat.glass, -3.6, 2.06, 1.21, 'Right_Rear_Glass', doorInfo, false);
+addMesh(s6, new THREE.BoxGeometry(1.95, 1.38, 0.04), mat.glass, 2.25, 2.06, 1.21, 'Right_Mid_Glass', doorInfo, false);
+
+// Animated Front & Center Doors (Right side Z = +1.23)
+const frontDoorLeaf = new THREE.Group();
+frontDoorLeaf.position.set(4.15, 1.66, 1.23);
+addMesh(frontDoorLeaf, new THREE.BoxGeometry(0.95, 2.18, 0.06), mat.glass, 0, 0, 0, 'Front_Door_Glass', doorInfo, false);
+addMesh(frontDoorLeaf, new THREE.BoxGeometry(0.98, 0.12, 0.08), mat.trimDark, 0, -1.04, 0, 'Front_Door_Frame', doorInfo);
+s6.add(frontDoorLeaf);
+
+const centerDoorLeft = new THREE.Group();
+centerDoorLeft.position.set(0.18, 1.66, 1.23);
+addMesh(centerDoorLeft, new THREE.BoxGeometry(0.68, 2.18, 0.06), mat.glass, 0, 0, 0, 'Center_Door_L', doorInfo, false);
+addMesh(centerDoorLeft, new THREE.BoxGeometry(0.70, 0.12, 0.08), mat.trimDark, 0, -1.04, 0, 'Center_Door_L_Frame', doorInfo);
+s6.add(centerDoorLeft);
+
+const centerDoorRight = new THREE.Group();
+centerDoorRight.position.set(0.88, 1.66, 1.23);
+addMesh(centerDoorRight, new THREE.BoxGeometry(0.68, 2.18, 0.06), mat.glass, 0, 0, 0, 'Center_Door_R', doorInfo, false);
+addMesh(centerDoorRight, new THREE.BoxGeometry(0.70, 0.12, 0.08), mat.trimDark, 0, -1.04, 0, 'Center_Door_R_Frame', doorInfo);
+s6.add(centerDoorRight);
+
+// LED Headlamps & Taillamps
+for (const side of [-1, 1]) {
+  addMesh(s6, new THREE.BoxGeometry(0.08, 0.16, 0.36), mat.ledHead, 5.42, 0.85, side * 0.88, 'LED_Headlamp', doorInfo, false);
+  addMesh(s6, new THREE.BoxGeometry(0.08, 0.24, 0.22), mat.ledTail, -5.42, 1.05, side * 0.96, 'LED_Taillamp', doorInfo, false);
+}
+// Front Destination LED Sign
+addMesh(s6, new THREE.BoxGeometry(0.06, 0.22, 1.65), mat.ledHead, 5.38, 2.86, 0, 'LED_Route_Display', doorInfo, false);
+
+// --- STAGE 07: Interior Seats, Poles & Cockpit (실내·편의시설) ---
+const s7 = stages[6];
+const interiorInfo = {title:'저상 객실 좌석 및 인체공학 안전 손잡이', desc:'시인성이 뛰어난 노란색 수직 스탠션 폴과 항균 인체공학 시트, 디지털 운전석 콕핏입니다.'};
+
+// Driver Cockpit & Steering Wheel
+addMesh(s7, new THREE.BoxGeometry(0.85, 0.82, 0.95), mat.trimDark, 4.65, 0.95, -0.68, 'Driver_Dashboard', interiorInfo);
+addMesh(s7, new THREE.TorusGeometry(0.21, 0.025, 10, 24).rotateY(Math.PI/2).rotateZ(0.45), mat.trimDark, 4.25, 1.42, -0.68, 'Steering_Wheel', interiorInfo);
+addMesh(s7, new THREE.BoxGeometry(0.48, 0.55, 0.48), mat.seatBlue, 3.85, 0.88, -0.68, 'Driver_Seat', interiorInfo);
+
+// Passenger Seats (2-row layout in rear, 1-row in low-floor section)
+const seatCoords = [
+  [-4.6, -0.78], [-4.6, 0.78],
+  [-3.6, -0.78], [-3.6, 0.78],
+  [-2.6, -0.78], [-2.6, 0.78],
+  [-1.6, -0.78], [-1.6, 0.78],
+  [1.8, -0.78], [2.7, -0.78]
+];
+seatCoords.forEach(([sx, sz], idx) => {
+  addMesh(s7, new THREE.BoxGeometry(0.44, 0.08, 0.44), mat.seatBlue, sx, 0.92, sz, `Seat_Cushion_${idx+1}`, interiorInfo);
+  addMesh(s7, new THREE.BoxGeometry(0.08, 0.56, 0.44), mat.seatBlue, sx - 0.19, 1.22, sz, `Seat_Back_${idx+1}`, interiorInfo);
+});
+
+// Yellow Vertical Stanchion Poles & Overhead Handrails
+for (const x of [-3.1, -1.1, 1.4, 3.1]) {
+  addMesh(s7, new THREE.CylinderGeometry(0.022, 0.022, 2.38, 12), mat.safetyYellow, x, 1.74, -0.45, 'Vertical_Handrail', interiorInfo);
+  if (x < 0 || x > 2.5) {
+    addMesh(s7, new THREE.CylinderGeometry(0.022, 0.022, 2.38, 12), mat.safetyYellow, x, 1.74, 0.45, 'Vertical_Handrail_R', interiorInfo);
+  }
+}
+for (const z of [-0.45, 0.45]) {
+  addMesh(s7, new THREE.CylinderGeometry(0.02, 0.02, 8.2, 12).rotateZ(Math.PI/2), mat.safetyYellow, -0.5, 2.68, z, 'Overhead_Handrail', interiorInfo);
+}
+
+// --- STAGE 08: Quality Inspection Laser Gate (완성·품질 검사) ---
+const s8 = stages[7];
+const qaInfo = {title:'비전 레이저 3D 단차·전장 품질 검사 게이트', desc:'완성차의 차체 조립 정밀도와 LED 전장 계통을 자동 스캔하는 디지털 트윈 품질 게이트입니다.'};
+for (const side of [-1, 1]) {
+  addMesh(s8, new THREE.BoxGeometry(0.24, 3.85, 0.24), mat.steel, 0, 1.92, side * 2.15, 'QA_Portal_Post', qaInfo);
+}
+addMesh(s8, new THREE.BoxGeometry(0.28, 0.24, 4.54), mat.steel, 0, 3.85, 0, 'QA_Portal_Beam', qaInfo);
+const laserPlane = addMesh(s8, new THREE.PlaneGeometry(4.1, 3.65).rotateY(Math.PI/2), mat.tealLaser, 0, 1.85, 0, 'QA_Laser_Curtain', qaInfo, false);
+
+/* ===========================================================
+   3. State Management, Simulation & UI Wiring
+   =========================================================== */
+const state = {
+  currentStep: 1, // 1..8
+  playing: false,
+  speed: 1,
+  doorOpen: false,
+  doorProgress: 0,
+  exploded: false,
+  explodeProgress: 0,
+  xray: false,
+  autoSpin: false,
+  stepTimer: 0
+};
+
+const routeColors = {
+  blue: '#006dc5',
+  green: '#269374',
+  red: '#c23d50',
+  yellow: '#d9af42'
+};
+
+function addLog(msg) {
+  const logEl = $('log');
+  const item = document.createElement('div');
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  item.innerHTML = `<time>${ts}</time>${msg}`;
+  logEl.prepend(item);
+  if (logEl.children.length > 25) logEl.lastChild.remove();
+}
+
+function buildStageList() {
+  const list = $('stage-list');
+  list.innerHTML = '';
+  stageData.forEach((st, idx) => {
+    const stepNum = idx + 1;
+    const btn = document.createElement('button');
+    btn.className = 'stage';
+    btn.dataset.step = stepNum;
+    btn.innerHTML = `
+      <span class="stage-num">${String(stepNum).padStart(2,'0')}</span>
+      <span><strong>${st.title}</strong><small>${st.sub}</small></span>
+      <span class="check">○</span>
+    `;
+    btn.onclick = () => {
+      state.playing = false;
+      updatePlayBtn();
+      setStep(stepNum);
+    };
+    list.appendChild(btn);
+  });
+}
+
+function setStep(step) {
+  state.currentStep = THREE.MathUtils.clamp(step, 1, 8);
+  stages.forEach((grp, idx) => {
+    grp.visible = (idx + 1) <= state.currentStep;
+  });
+  renderer.shadowMap.needsUpdate = true;
+
+  const info = stageData[state.currentStep - 1];
+  const pct = (state.currentStep / 8 * 100).toFixed(1);
+
+  $('step-no').textContent = String(state.currentStep).padStart(2,'0');
+  $('step-title').textContent = info.title;
+  $('step-desc').textContent = info.desc;
+  $('progress-fill').style.width = `${pct}%`;
+
+  $('kpi-progress').textContent = pct;
+  $('kpi-modules').textContent = String(state.currentStep).padStart(2,'0');
+  $('kpi-status').textContent = state.playing ? '자동 조립 중' : (state.currentStep === 8 ? '공정 완료' : '단계 대기');
+  $('lineSub').textContent = state.playing ? `배속 ${state.speed}× 가동` : '수동 점검 모드';
+
+  const isDone = state.currentStep === 8;
+  $('kpi-quality').textContent = isDone ? 'PASS (합격)' : '조립 진행 중';
+  $('qualitySub').textContent = isDone ? '전 항목 정상 판정' : '08단계 완료 시 판정';
+  $('simBadge').textContent = isDone ? 'COMPLETED' : (state.playing ? 'RUNNING' : 'READY');
+
+  $('explain-title').textContent = `${String(state.currentStep).padStart(2,'0')} · ${info.title}`;
+  $('explain-text').textContent = info.detail;
+
+  document.querySelectorAll('.stage').forEach((el, idx) => {
+    const s = idx + 1;
+    el.classList.toggle('active', s === state.currentStep);
+    el.classList.toggle('done', s < state.currentStep || (s === 8 && state.currentStep === 8));
+    el.querySelector('.check').textContent = s <= state.currentStep ? '●' : '○';
+  });
+
+  addLog(`[STEP 0${state.currentStep}] ${info.title} 공정 반영`);
+}
+
+function updatePlayBtn() {
+  $('play').textContent = state.playing ? '❚❚ 일시정지' : '▶ 자동 실행';
+}
+
+$('play').onclick = () => {
+  if (state.currentStep === 8 && !state.playing) setStep(1);
+  state.playing = !state.playing;
+  state.stepTimer = 0;
+  updatePlayBtn();
+  setStep(state.currentStep);
+};
+$('prev').onclick = () => { state.playing = false; updatePlayBtn(); setStep(state.currentStep - 1); };
+$('next').onclick = () => { state.playing = false; updatePlayBtn(); setStep(state.currentStep + 1); };
+$('reset').onclick = () => {
+  state.playing = false;
+  state.doorOpen = false;
+  state.exploded = false;
+  state.xray = false;
+  $('door').classList.remove('active');
+  $('explode').classList.remove('active');
+  $('xray').classList.remove('active');
+  applyXray();
+  updatePlayBtn();
+  setStep(1);
+  addLog('조립 라인 초기 상태로 리셋되었습니다.');
+};
+
+$('door').onclick = () => {
+  if (state.currentStep < 6) setStep(6);
+  state.doorOpen = !state.doorOpen;
+  $('door').classList.toggle('active', state.doorOpen);
+  $('door').textContent = state.doorOpen ? '도어 닫기' : '도어 열기';
+  addLog(state.doorOpen ? '전·중문 슬라이딩 도어 개방' : '전·중문 슬라이딩 도어 닫힘');
+};
+
+$('explode').onclick = () => {
+  state.exploded = !state.exploded;
+  $('explode').classList.toggle('active', state.exploded);
+  addLog(state.exploded ? '3D 모듈 분해 보기 활성화' : '3D 모듈 결합 상태로 복귀');
+};
+
+function applyXray() {
+  transparentBodyMats.forEach(m => {
+    m.transparent = state.xray;
+    m.opacity = state.xray ? 0.24 : 1.0;
+    m.depthWrite = !state.xray;
+    m.needsUpdate = true;
+  });
+}
+
+$('xray').onclick = () => {
+  state.xray = !state.xray;
+  $('xray').classList.toggle('active', state.xray);
+  applyXray();
+  addLog(state.xray ? 'X-RAY 차체 외판 투시 모드 ON' : 'X-RAY 투시 모드 OFF');
+};
+
+$('spin').onclick = () => {
+  state.autoSpin = !state.autoSpin;
+  controls.autoRotate = state.autoSpin;
+  controls.autoRotateSpeed = 1.4;
+  $('spin').classList.toggle('active', state.autoSpin);
+};
+
+$('speed').onchange = e => {
+  state.speed = parseFloat(e.target.value);
+};
+
+document.querySelectorAll('.swatch').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.swatch').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const col = routeColors[btn.dataset.color];
+    mat.paint.color.set(col);
+    addLog(`노선 도장 변경: ${btn.textContent.trim()} (${col})`);
+  };
+});
+
+/* Camera Views & Smooth Tweening */
+let cameraTween = null;
+controls.addEventListener('start', () => { cameraTween = null; });
+
+function setView(key) {
+  const v = SPEC.cameraViews[key];
+  if (!v) return;
+  cameraTween = {
+    from: camera.position.clone(),
+    fromTarget: controls.target.clone(),
+    to: new THREE.Vector3(...v.positionXYZ),
+    target: new THREE.Vector3(...v.targetXYZ),
+    started: performance.now()
+  };
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === key));
+}
+
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
+$('resetView').onclick = () => setView('overview');
+
+/* Raycasting Part Inspector */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let downPos = {x:0, y:0};
+
+renderer.domElement.addEventListener('pointerdown', e => { downPos = {x:e.clientX, y:e.clientY}; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) > 5) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(busRoot.children, true).filter(h => h.object.visible && h.object.userData.info);
+  if (hits.length > 0) {
+    const info = hits[0].object.userData.info;
+    $('part-detail').innerHTML = `<b>${info.title}</b><p>${info.desc}</p>`;
+    addLog(`부품 검사 선택: ${info.title}`);
+  }
+});
+
+/* Export JSON & PNG */
+function download(name, blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+$('jsonBtn').onclick = () => {
+  const snapshot = {
+    ...SPEC,
+    exportedAt: new Date().toISOString(),
+    assemblyState: {
+      currentStep: state.currentStep,
+      stageName: stageData[state.currentStep - 1].title,
+      doorOpen: state.doorOpen,
+      exploded: state.exploded,
+      xray: state.xray,
+      paintColor: '#' + mat.paint.color.getHexString()
+    }
+  };
+  download('korean_citybus_factory_snapshot.json', new Blob([JSON.stringify(snapshot, null, 2)], {type:'application/json'}));
+  addLog('장면 설정 JSON 파일 내보내기 완료');
+};
+
+$('pngBtn').onclick = () => {
+  updateWallCutaway();
+  renderer.render(scene, camera);
+  renderer.domElement.toBlob(blob => {
+    if (blob) download('korean_citybus_assembly_3d.png', blob);
+  }, 'image/png');
+  addLog('3D 뷰포트 PNG 캡처 저장 완료');
+};
+
+/* Dialog & Mobile Toggles */
+$('helpBtn').onclick = () => $('help').showModal();
+$('close-help').onclick = () => $('help').close();
+$('mobileLeft').onclick = () => { $('leftPanel').classList.toggle('open'); $('rightPanel').classList.remove('open'); };
+$('mobileRight').onclick = () => { $('rightPanel').classList.toggle('open'); $('leftPanel').classList.remove('open'); };
+
+/* Animation Loop */
+const clock = new THREE.Clock();
+let graphicsLost = false;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const now = performance.now();
+
+  if (state.playing) {
+    state.stepTimer += dt * state.speed;
+    if (state.stepTimer >= 2.1) {
+      state.stepTimer = 0;
+      if (state.currentStep < 8) {
+        setStep(state.currentStep + 1);
+      } else {
+        state.playing = false;
+        updatePlayBtn();
+        setStep(8);
+        addLog('전체 8단계 시내버스 조립 시뮬레이션 완료');
+      }
+    }
+  }
+
+  // Smooth Door Animation
+  const targetDoor = state.doorOpen ? 1 : 0;
+  state.doorProgress = THREE.MathUtils.lerp(state.doorProgress, targetDoor, dt * 6);
+  frontDoorLeaf.position.x = 4.15 - state.doorProgress * 0.78;
+  frontDoorLeaf.position.z = 1.23 + state.doorProgress * 0.08;
+  centerDoorLeft.position.x = 0.18 - state.doorProgress * 0.56;
+  centerDoorLeft.position.z = 1.23 + state.doorProgress * 0.08;
+  centerDoorRight.position.x = 0.88 + state.doorProgress * 0.56;
+  centerDoorRight.position.z = 1.23 + state.doorProgress * 0.08;
+
+  // Smooth Explode View Animation
+  const targetExplode = state.exploded ? 1 : 0;
+  state.explodeProgress = THREE.MathUtils.lerp(state.explodeProgress, targetExplode, dt * 5);
+  stages.forEach((grp, idx) => {
+    grp.position.copy(explodeOffsets[idx]).multiplyScalar(state.explodeProgress);
+  });
+
+  // Laser Scan Motion on Stage 8
+  if (s8.visible) {
+    laserPlane.position.x = Math.sin(now * 0.0022) * 5.2;
+  }
+
+  // Camera Tween
+  if (cameraTween) {
+    const p = Math.min(1, (now - cameraTween.started) / 900);
+    const ease = p * p * (3 - 2 * p);
+    camera.position.lerpVectors(cameraTween.from, cameraTween.to, ease);
+    controls.target.lerpVectors(cameraTween.fromTarget, cameraTween.target, ease);
+    if (p >= 1) cameraTween = null;
+  }
+
+  controls.update();
+  clampTarget();
+  updateWallCutaway();
+
+  if (!graphicsLost) renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+renderer.domElement.addEventListener('webglcontextlost', e => {
+  e.preventDefault();
+  graphicsLost = true;
+  $('graphicsNotice').hidden = false;
+});
+renderer.domElement.addEventListener('webglcontextrestored', () => {
+  graphicsLost = false;
+  renderer.shadowMap.needsUpdate = true;
+  $('graphicsNotice').hidden = true;
+});
+
+/* Init */
+buildStageList();
+setStep(8);
+animate();
+$('loading').classList.add('off');
+setTimeout(() => $('loading').remove(), 550);
+</script>
+</body>
+</html>
